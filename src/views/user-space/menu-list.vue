@@ -6,7 +6,7 @@
         	<a href="">发布菜单</a>
 			</div>
 		</div>
-    <div class="info-empty">
+    <div class="info-empty" v-if="!info.length">
 			<div  v-if="activeName === 'collection'">
 				<p>还没有收藏任何的菜谱，去搜自己喜欢的菜谱，收藏起来吧。</p>
         <a href="">菜谱大全</a>

@@ -1,43 +1,54 @@
 <template>
   <section class="detail-content">
     <div class="detail-materials">
-      <p class=""><strong>“</strong>冬天吃火锅是最幸福的事。<strong>”</strong></p>
+      <p class=""><strong>“</strong>{{info.product_story}}<strong>”</strong></p>
       <h2>用料</h2>
-      <div class="detail-materials-box clearfix">
+      <div class="detail-materials-box clearfix" v-if="info.raw_material.main_material.length">
         <h3>主料</h3>
         <ul>
-          <li class="" v-for="n in 5" :key="n">
-            姜
-            <span>20克</span>
+          <li class="" v-for="item in info.raw_material.main_material" :key="item._id">
+            {{item.name}}
+            <span>{{item.specs}}</span>
           </li>
         </ul>
       </div>
-      <div class="detail-materials-box clearfix">
+      <div class="detail-materials-box clearfix" v-if="info.raw_material.accessories_material.length">
         <h3>辅料</h3>
         <ul>
-          <li class="" v-for="n in 5" :key="n">
-            姜
-            <span>20克</span>
+          <li class="" v-for="item in info.raw_material.accessories_material" :key="item._id">
+            {{item.name}}
+            <span>{{item.specs}}</span>
           </li>
         </ul>
       </div>
     </div>
     <div class="detail-explain">
-      <h2>韩国部队火锅的做法</h2>
-      <section class="detail-section clearfix" v-for="n in 5" :key="n">
-        <em class="detail-number">{{n}}.</em>
+      <h2>{{info.title}}的做法</h2>
+      <section class="detail-section clearfix" v-for="(item,index) in info.steps" :key="item._id">
+        <em class="detail-number">{{index+1}}.</em>
         <div class="detail-explain-desc">
-          <p>把蒜片爆香后倒入辣酱50克（没韩国辣酱，我用辣酱顶替）翻炒，倒入开水煮开，加入适量盐。</p>
-          <img class="conimg" src="https://s1.st.meishij.net/rs/105/168/9229605/n9229605_148232985280080.jpg" alt="">
+          <p>{{item.describe}}</p>
+          <img class="conimg" :src="item.img_url" v-if="item.img_url" alt="">
         </div>
       </section>
       <div class="skill">
         <h2>烹饪技巧</h2>
-        <p>八爪鱼不了煮久，不然缩水很严重。八爪鱼不了煮久，不然缩水很严重。八爪鱼不了煮久，不然缩水很严重。八爪鱼不了煮久，不然缩水很严重。</p>
+        <p>{{info.skill}}</p>
       </div>
     </div>
   </section>
 </template>
+<script>
+export default {
+  name: 'DetailContent',
+  props:{
+    info: {
+      type: Object,
+      default: () => ({})
+    }
+  }
+}
+</script>
 <style lang="stylus">
 .detail-content
   margin-top 20px

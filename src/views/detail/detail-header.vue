@@ -1,35 +1,48 @@
 <template>
   <section class="detail-header">
-    <img class="detail-img" src="http://site.meishij.net/r/105/168/9229605/s9229605_148232985753207.jpg" />
+    <img class="detail-img" :src="info.product_pic_url" />
     <div class="detail-header-right">
 
       <div class="detail-title clearfix">
-          <h1 class="title">测试数据</h1>
-          <div class="detail-collection">
+          <h1 class="title">{{info.title}}</h1>
+          <!--
+            1. 不显示，这个菜谱是当前用户发布的
+            2. 显示，后端返回一个是否收藏的字段
+          -->
+          <div class="detail-collection" v-if="!isOnwer">
             <!-- collection-at  no-collection-at-->
-            <a href="javascript:;" class="collection-at"> 
-                '已收藏'  : '收藏'
+            <a 
+              href="javascript:;" 
+              class="collection-at" 
+              :class="{'no-collection-at': info.isCollection}"
+              @click="toggleCollection"
+            > 
+                {{
+                  info.isCollection ? '已收藏'  : '收藏'
+                }}
             </a>
           </div>
       </div>
       
       <ul class="detail-property clearfix">
-        <li v-for="n in 6" :key="n">
-          <strong>工艺</strong>
-          <span>烩</span>
+        <li v-for="item in info.properties_show" :key="item.type">
+          <strong>{{item.parent_name}}</strong>
+          <span>{{item.name}}</span>
         </li>
       </ul>
 
       <div class="user">
-        <a target="_blank" id="tongji_author_img" href="" class="img">
-          <img src="https://s1.c.meishij.net/images/default/tx2_2.png">
-        </a>
+        <router-link id="tongji_author_img" class="img" :to="{name:'space', query:{userId: info.userInfo.userId}}">
+          <img :src="info.userInfo.avatar">
+        </router-link>
         <div class="info">
           <h4>
-            <a id="tongji_author" target="_blank" href="">C陈(来自微信.)</a>
+            <router-link id="tongji_author"  :to="{name:'space', query:{userId: info.userInfo.userId}}">
+              {{info.userInfo.name}}
+            </router-link>
           </h4>
-          <span>菜谱：3　/　关注：1　/　粉丝：74</span>
-          <strong>2016-12-22</strong>
+          <span>菜谱：{{info.userInfo.work_menus_len}}　/　关注：{{info.userInfo.following_len}}　/　粉丝：{{info.userInfo.follows_len}}</span>
+          <strong>{{info.userInfo.createdAt}}</strong>
         </div>
       </div>
 
@@ -37,11 +50,33 @@
   </section>
 </template>
 <script>
+import {toggleCollection} from '@/service/api'
 export default {
   props:{
     info: {
       type: Object,
       default: () => ({})
+    }
+  },
+  computed: {
+    isOnwer(){
+      return this.info.userInfo.userId === this.$store.state.userInfo.userId
+    }
+  },
+  methods:{
+    async toggleCollection(){
+      // 先判断一下是否登录
+      if(!this.$store.getters.isLogin){
+        this.$message({
+          showClose: true,
+          message: '请先登录，再收藏',
+          type: 'warning'
+        });
+        return;
+      }
+      const data = await toggleCollection({menuId: this.info.menuId});
+      console.log(data);
+      this.info.isCollection = data.data.isCollection;
     }
   }
 }

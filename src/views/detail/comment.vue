@@ -1,37 +1,45 @@
 <template>
   <div class="comment-box">
-    <h2>蜜汁鸡翅的讨论</h2>
+    <h2>{{info.title}}的讨论</h2>
     <div class="comment-text">
-      <a href="javascript:;" class="useravatar">
-        <img src="https://s1.c.meishij.net/q/images/default/q_default.png">
+      <a href="javascript:;" class="useravatar" v-if="isLogin">
+        <img :src="userInfo.avatar">
       </a>
-      <div class="comment-right">
+      <div  v-if="!isLogin">请先登录后，再评论<router-link :to="{name:'login'}">登录</router-link></div>
+      
+      <div class="comment-right"  v-if="isLogin">
         <el-input
           type="textarea"
           :rows="5"
           :cols="50"
-          placeholder="请输入内容">
+          placeholder="请输入内容"
+          v-model="commentText"
+        >
         </el-input>
-        <div class="comment-button">
+        <div class="comment-button"  v-if="isLogin">
           <el-button 
             class="send-comment" 
             type="primary" 
             size="medium"
+            @click="send"
           >提交</el-button>
         </div>
       </div>
     </div>
     <div class="comment-list-box">
       <ul class="comment-list">
-        <li v-for="n in 5" :key="n">
+        <li v-for="item in comments" :key="item.commentId">
           <a target="_blank" href="https://i.meishi.cc/cook.php?id=14026963" class="avatar">
-            <img src="https://s1.c.meishij.net/images/default/tx2_7.png">
-            <h5>杰米1402</h5>
+           
           </a>
+          <router-link :to="{name:'space', query:{userId: item.userInfo.userId}}" class="avatar">
+            <img :src="item.userInfo.avatar">
+            <h5>{{item.userInfo.name}}</h5>
+          </router-link>
           <div class="comment-detail">
-            <p class="p1">最喜欢吃鸡翅了</p>
+            <p class="p1">{{item.commentText}}</p>
             <div class="info clearfix">
-              <span style="float: left;">2019-08-29 16:39:42</span>
+              <span style="float: left;">{{item.createdAt}}</span>
             </div>
           </div>
         </li>
@@ -39,6 +47,48 @@
     </div>
   </div>
 </template>
+<script>
+import {getComments,postComment} from '@/service/api';
+export default {
+  name: 'Comment',
+  props:{
+    info: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  data(){
+    return {
+      comments: [],
+      commentText: ''
+    }
+  },
+  computed: {
+    userInfo(){
+      return this.$store.state.userInfo;
+    },
+    isLogin(){
+      return this.$store.getters.isLogin;
+    }
+  },
+  async mounted(){
+    let {menuId} = this.$route.query;
+    if(menuId){
+      let data = await getComments({menuId: menuId});
+      this.comments = data.data.comments;
+    }
+  },
+  methods:{
+    async send(){
+      console.log('发送')
+      let data = await postComment({menuId: this.info.menuId, commentText: this.commentText});
+      console.log(data);
+      this.comments.unshift(data.data.comments);
+      this.commentText = '';
+    }
+  }
+}
+</script>
 <style lang="stylus">
 .comment-box
   background-color #ffffff
@@ -56,6 +106,8 @@
       margin-right 20px
       img 
         vertical-align top
+        width 36px
+        height 36px
     .comment-right 
       display inline-block
       width 80%
