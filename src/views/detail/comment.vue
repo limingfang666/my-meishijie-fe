@@ -35,7 +35,7 @@
             <h5></h5>
           </router-link>
           <div class="comment-detail">
-            <p class="p1"></p>
+            <p class="p1">这里是评论内容</p>
             <div class="info clearfix">
               <span style="float: left;"></span>
             </div>
