@@ -1,21 +1,21 @@
 <template>
   <div class="login-section">
-    <!-- :rules="rules" -->
-    <el-form 
+  <!-- 表单校验 -->
+    <el-form
+     :model="loginForm" :rules="rules" ref="loginForm"
       label-position="top"
-      :rules="rules"
-      :model="ruleForm" status-icon 
-       ref="ruleForm" label-width="100px" class="demo-ruleForm"
+      label-width="100px" class="demo-ruleForm"
     >
       <el-form-item label="用户名" prop="name">
-        <el-input type="text" v-model="ruleForm.name" autocomplete="off"></el-input>
+      <!-- 使用自定义指令v-focus -->
+        <el-input type="text" v-model="loginForm.name" v-focus></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
-        <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
+        <el-input type="password" v-model="loginForm.password"></el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
-        <el-button @click="resetForm('ruleForm')">重置</el-button>
+        <el-button type="primary" @click="submitLoginForm('loginForm')">提交</el-button>
+        <el-button  @click="resetForm('loginForm')">重置</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -26,46 +26,60 @@ import {login} from '@/service/api';
 export default {
   data() {
     return {
-      ruleForm: {
-        name: '',
-        password: ''
+      loginForm:{
+        name:'',
+        password:''
       },
-      rules: {
+      rules:{
         name: [
-          { required: true, message: '请输入活动名称', trigger: 'blur' }
-        ],
+            { required: true, message: '请输入用户名', trigger: 'blur' },
+            // { min: 3, max: 5, message: '长度在 3 到 5 个字符', trigger: 'blur' }
+          ],
         password: [
-          { required: true, message: '请输入密码', trigger: 'blur' }
-        ]
+            { required: true, message: '请输入密码', trigger: 'blur' },
+            // { min: 3, max: 5, message: '长度在 3 到 5 个字符', trigger: 'blur' }
+          ],
       }
     };
   },
+  // 自定义指令
+  directives: {
+    focus: {
+      // 指令的定义
+      inserted: function (el) {
+        el.childNodes[1].focus();
+      }
+    }
+  },
+  mounted(){
+    document.onkeyup= e =>{
+        if (e.keyCode === 13) {
+            this.submitLoginForm();
+         }
+      }
+  },
   methods: {
-    submitForm(formName) {
-      this.$refs[formName].validate(async (valid) => {
-
-        if (valid) {
-          // 在这里向后端发送登录用户名和密码
-          login({
-            name: this.ruleForm.name,
-            password: this.ruleForm.password
-          }).then((data) => {
-            if(data.code === 0) {  // 成功
-              localStorage.setItem('token', data.data.token);
-              window.location.href = '/';
-            }
-            if(data.code === 1){
-              this.$message.error(data.mes);
-            }
-          })
-        } else {
-          console.log('error submit!!');
-          return false;
+     submitLoginForm(){
+      // 进行表单校验
+      // 注意使用enter按下调用时，this.$refs[loginForm]会找不到loginForm，必须使用this.$refs.loginForm
+      this.$refs.loginForm.validate(async (valid)=>{
+        if(valid){
+          // 同步方式发起后端校验
+          const data = await login({name:this.loginForm.name,password:this.loginForm.password});
+          
+          if(data.code===1){
+            this.$refs[loginForm].$message.error(data.mes);
+            return;
+          }else{
+            // 登录成功后记录token,保存user信息到vuex(路由中实现),并跳转到home页面
+            localStorage.setItem("token",data.data.token);
+            window.location.href = '/';
+          }
         }
       });
     },
-    resetForm(formName) {
-      this.$refs[formName].resetFields();
+    resetForm(loginForm) {
+      this.$refs[loginForm].resetFields();
     }
   }
 }

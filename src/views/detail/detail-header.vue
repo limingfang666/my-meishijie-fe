@@ -1,48 +1,46 @@
 <template>
   <section class="detail-header">
-    <img class="detail-img" :src="info.product_pic_url" />
+    {{menuInfo.product_pic_url}}
+    <img class="detail-img" :src="menuInfo.product_pic_url" />
     <div class="detail-header-right">
-
       <div class="detail-title clearfix">
-          <h1 class="title">{{info.title}}</h1>
+          <h1 class="title">{{menuInfo.title}}</h1>
           <!--
             1. 不显示，这个菜谱是当前用户发布的
             2. 显示，后端返回一个是否收藏的字段
           -->
-          <div class="detail-collection" v-if="!isOnwer">
-            <!-- collection-at  no-collection-at-->
-            <a 
-              href="javascript:;" 
-              class="collection-at" 
-              :class="{'no-collection-at': info.isCollection}"
+          <!-- 不是自己的空间才显示是否收藏按钮 -->
+          <div class="detail-collection" v-if="!isOwner">
+            <a href="javascript:;" :class="isCollection?'no-collection-at':'collection-at'"
               @click="toggleCollection"
             > 
-                {{
-                  info.isCollection ? '已收藏'  : '收藏'
-                }}
+                <span v-if="!isCollection">收藏</span>
+                <span v-if="isCollection">取消收藏</span>
             </a>
           </div>
       </div>
-      
       <ul class="detail-property clearfix">
-        <li v-for="item in info.properties_show" :key="item.type">
-          <strong>{{item.parent_name}}</strong>
-          <span>{{item.name}}</span>
+        <!--property  -->
+        <li v-for="property in menuInfo.properties_show" :key="property.parent_type">
+          <strong>{{property.parent_name}}</strong>
+          <span>{{property.name}}</span>
         </li>
       </ul>
 
-      <div class="user">
-        <router-link id="tongji_author_img" class="img" :to="{name:'space', query:{userId: info.userInfo.userId}}">
-          <img :src="info.userInfo.avatar">
+<!-- 显示用户信息 -->
+<!-- 从父组件传过来的对象或数组，一定要判断是否存在才能使用下面的属性 -->
+      <div class="user" v-if="menuInfo.userInfo">
+        <router-link id="tongji_author_img" class="img" :to="{name:'space',query:{userId:menuInfo.userInfo.userId}}">
+          <img :src="menuInfo.userInfo.avatar">
         </router-link>
         <div class="info">
           <h4>
-            <router-link id="tongji_author"  :to="{name:'space', query:{userId: info.userInfo.userId}}">
-              {{info.userInfo.name}}
+            <router-link id="tongji_author" :to="{name:'space',query:{userId:menuInfo.userInfo.userId}}">
+              {{menuInfo.userInfo.name}}
             </router-link>
           </h4>
-          <span>菜谱：{{info.userInfo.work_menus_len}}　/　关注：{{info.userInfo.following_len}}　/　粉丝：{{info.userInfo.follows_len}}</span>
-          <strong>{{info.userInfo.createdAt}}</strong>
+          <span>菜谱：{{menuInfo.userInfo.work_menus_len}}　/　关注：{{menuInfo.userInfo.following_len}}　/　粉丝：{{menuInfo.userInfo.follows_len}}</span>
+          <strong>最后更新时间：{{menuInfo.userInfo.createdAt|formatTime(10)}}</strong>
         </div>
       </div>
 
@@ -50,35 +48,54 @@
   </section>
 </template>
 <script>
-import {toggleCollection} from '@/service/api'
+// 引入过滤器，vue3中已经废弃，使用computed属性实现
+import '@/tools/filter';
+import { getCollection, collection } from '@/service/api'
+
 export default {
-  props:{
-    info: {
-      type: Object,
-      default: () => ({})
-    }
-  },
-  computed: {
-    isOnwer(){
-      return this.info.userInfo.userId === this.$store.state.userInfo.userId
-    }
-  },
-  methods:{
-    async toggleCollection(){
-      // 先判断一下是否登录
-      if(!this.$store.getters.isLogin){
-        this.$message({
-          showClose: true,
-          message: '请先登录，再收藏',
-          type: 'warning'
-        });
-        return;
+    props: {
+      menuInfo:{
+      },
+    },
+    data(){
+      return {
+        isCollection: true,
+        isOwner:true
       }
-      const data = await toggleCollection({menuId: this.info.menuId});
-      console.log(data);
-      this.info.isCollection = data.data.isCollection;
+    },
+    // mounted子组件会获取不到父组件传递的数据，所以使用updated
+    async updated(){
+      // 判断是否是自己的空间
+      let userId = this.$store.state.userInfo.userId;
+      let curUserId = this.menuInfo.userInfo.userId;
+      if(curUserId === userId){
+        this.isOwner = true;
+      }else{
+        this.isOwner = false;
+        // 获取到的是用户收藏的所有菜单
+        let collectionList = await getCollection({userId:userId});
+        
+      // 如果当前用户在收藏列表里面则显示：循环数组，如果收藏menuId在这个收藏列表里则表示已收藏
+        let collectionData = collectionList.data.list.filter(item=>item._id === this.menuInfo.menuId);
+          
+        if(collectionData.length>0){
+          this.isCollection = true;
+        }else{
+          this.isCollection = false;
+        }
+      }
+    },
+    methods:{
+      async toggleCollection(){
+        let userId = this.$store.state.userInfo.userId;
+        let collectionData =  await collection({userId:userId,menuId:this.menuInfo.menuId});
+        // 通过this.$nextTick()进行局部刷新
+        this.$nextTick(()=>{
+          this.isCollection = collectionData.data.isCollection;
+        });
+        
+      },
     }
-  }
 }
 </script>
 

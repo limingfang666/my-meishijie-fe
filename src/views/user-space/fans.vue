@@ -1,21 +1,21 @@
 <template>
   <div class="fans">
-		<div class="info-empty" v-if="!info.length">
+		<div class="info-empty">
 			<div>
-				<p v-if="activeName === 'fans'">还没有被关注哦！多发布菜谱，更容易被找到。</p>
-				<p v-if="activeName === 'following'">还没有关注别人哦！可以预览菜谱，找到别人</p>
+				<p v-if="info.length==0&&isFans">还没有被关注哦！多发布菜谱，更容易被找到。</p>
+				<p v-if="info.length==0&&!isFans">还没有关注别人哦！可以预览菜谱，找到别人</p>
 			</div>
 		</div>
-		<ul class="fans clearfix">
-			<router-link :to="{name: 'space', query:{userId: item.userId}}" tag="li" v-for="item in info" :key="item.userId">
+		<ul class="fans clearfix" v-if="info.length!=0">
+			<router-link to="" tag="li" v-for="item in info" :key="item._id">
 				<a href="javascript:;" class="img">
 				<img :src="item.avatar"></a>
 				<div class="c">
 					<strong class="name">
-						<router-link :to="{name: 'space', query:{userId: item.userId}}">{{item.name}}</router-link>
+						<router-link to="">{{item.name}}</router-link>
 					</strong>
 					<em class="info"><span>粉丝：</span> {{item.follows_len}}　|　<span>关注：</span>{{item.following_len}}</em>
-					<em class="info" v-if="item.sign"><span>简介：</span>{{item.sign}}</em>
+					<em class="info"><span>简介：</span>{{item.sign}}</em>
 				</div>
 			</router-link>
 		</ul>
@@ -23,16 +23,36 @@
 </template>
 <script>
 export default {
-	props:{
-		info:{
-			type: Array,
-			default: () => []
-		},
-		activeName:{
-			type: String,
-			default: 'fans'
+	props: {
+		info: {
 		}
-	}
+	},
+	data(){
+		return {
+			isFans: true
+		}
+  },
+  // 根据路由改变设置isWork的值并改变布局
+  watch:{
+    $route(){
+      this.changeTab();
+    },
+    immediate:true
+  },
+  created(){
+    this.changeTab();
+  },
+  methods:{
+    changeTab(){
+      let currTab = this.$route.name;
+	  
+      if(currTab === "fans"){
+        this.isFans = true;
+      }else if(currTab === "following"){
+        this.isFans = false;
+      }
+    }
+  }
 }
 </script>
 

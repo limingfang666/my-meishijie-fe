@@ -1,5 +1,5 @@
 <template>
-  <div class="space">
+  <div class="space" ref="space">
     <h2>欢迎来到我的美食空间</h2>
     <div class="user-info">
       <div class="user-avatar">
@@ -8,17 +8,17 @@
       <div class="user-main">
         <h1>{{userInfo.name}}</h1>
         <span class="info">
-          <em>{{userInfo.createdAt}}加入美食杰</em>
+        {{userInfo.createdAt | formatTime(10)}}
+          <em>加入美食杰</em>
+          <span v-if="isOwner">
           |
-          <router-link :to="{name: 'edit'}" v-if="isOwner">编辑个人资料</router-link>
+          <router-link :to="{name:'edit',query:{userId:userInfo.userId}}" >编辑个人资料</router-link>
+          </span>
         </span>
-        <div class="tools" v-if="!isOwner">
-          <!-- follow-at  no-follow-at-->
-				  <a href="javascript:;" class="follow-at"
-            :class="{'no-follow-at': userInfo.isFollowing}"
-            @click="toggleHandler"
-          >
-            {{ userInfo.isFollowing ? '已关注' : '+关注' }}  
+        <div class="tools" v-if="!isOwner" >
+				  <a href="javascript:;" @click="toggleFollow()" :class="isFollowing?'no-follow-at':'follow-at'">
+            <span v-if="!isFollowing">+关注</span>
+            <span v-if="isFollowing">取消关注</span>
           </a>
         </div>
       </div>
@@ -52,7 +52,7 @@
     </div>
 
     <!-- v-model="activeName" -->
-    <el-tabs class="user-nav" v-model="activeName" @tab-click="tabClickHandler">
+    <el-tabs class="user-nav" v-model="activeName" @tab-click="handleClick">
       <el-tab-pane label="作品" name="works"></el-tab-pane>
       <el-tab-pane label="粉丝" name="fans"></el-tab-pane>
       <el-tab-pane label="关注" name="following"></el-tab-pane>
@@ -64,118 +64,108 @@
       <!-- <menu-card :margin-left="13"></menu-card> -->
       <!-- 粉丝 & 关注 布局 -->
       <!-- <Fans></Fans> -->
-      <router-view :info="list" :activeName="activeName"></router-view>
+      <router-view :info="info"></router-view>
     </div>
 
   </div>
 </template>
 <script>
-import {userInfo, toggleFollowing, getMenus, following, fans, collection} from '@/service/api';
-// const getOtherInfo = {
-//   async works(params){  // 作品
-//     let data = (await getMenus(params)).data;
-//     data.flag = 'works'
-//     return data;
-//   },
-//   async following(params){  // 关注
-//     let data = (await following(params)).data;;
-//     data.flag = 'following';
-//     return data;
-//   },
-//   async fans(params){  // 粉丝
-//     let data = (await fans(params)).data;;
-//     data.flag = 'fans'
-//     return data;
-//   },
-//   async collection(params){ // 收藏
-//     let data = (await collection(params)).data;
-//     data.flag = 'collection';
-//     return data
-//   }
-// }
-
-const getOtherInfo = {
-  async works(params){  // 作品
-    return (await getMenus(params)).data;
-  },
-  async following(params){  // 关注
-    return (await following(params)).data;;
-  },
-  async fans(params){  // 粉丝
-    return (await fans(params)).data;;
-  },
-  async collection(params){ // 收藏
-    return (await collection(params)).data;
-  }
-}
-
+import { formatTime } from '@/tools/filter'
+import { getUserInfo, getSpaceTab, follow } from "@/service/api";
 export default {
   name: 'Space',
   data(){
     return {
-      userInfo: {},
+      // 当前用户信息
+      userInfo:{
+      },
+      // 传给子组件信息
+      info:{},
+      // 是否是自己的个人空间
       isOwner: false,
+      // 定义哪个tab为active
       activeName: 'works',
-      list: [],
-      queen: {}
+      // 关注按钮颜色
+      isFollowing: true,
     }
   },
+  mounted(){
+    this.loadUser();
+  },
+  // 监听路由，如果space页面userId有变化（个人空间和他人空间的切换），需要刷新页面
   watch:{
-    $route:{
-      async handler(){
-        let {userId} = this.$route.query;
-        this.isOwner = !userId || userId === this.$store.state.userInfo.userId;
-        if(this.isOwner) { // 当前登录的用户
-          this.userInfo = this.$store.state.userInfo;
-        }else {  // 别人空间
-          const data = await userInfo({userId});
-          this.userInfo = data.data;
-        }
-        this.activeName = this.$route.name;
-
-        this.getInfo();
+    $route: {
+      handler:function(){
+        this.loadUser();
       },
-      immediate: true
-    }
+      immediate:true
+    },
   },
   methods:{
-    async getInfo(){
-        // 在切换tab的时候，最后一次回来的ajax，就填充谁的数据。
-        // 对应路由的接口
-        // 在返回的数据中添加请求的标识，如果返回的数据和我当前请求的标识相同，就填充数据。
-        // let data = await getOtherInfo[this.activeName]({userId: this.userInfo.userId});
-        // if(this.activeName === data.flag){
-        //    this.list = data.list;
-        // }
-        // 粉丝 作品 粉丝
-        // works = 作品的数据 fans = 粉丝的数据
-        (async (activeName) => {
-          let data = await getOtherInfo[this.activeName]({userId: this.userInfo.userId});
-          this.queen[activeName] = data.list;  // this.queen.works = 作品的数据
-          // 取当前路由name对应的数据
-          if(activeName === this.activeName){
-            this.list = this.queen[this.activeName];
-          }
-          this.queen = {};
-        })(this.activeName)
-        
+    async loadUser(){
+        // 根据userId获取用户信息
+      let userId = this.$route.query.userId;
+      let userInfoData = await getUserInfo({userId:userId});
+      if(userInfoData && userInfoData.code === 0){
+        this.userInfo = userInfoData.data;
+        // 关注按钮颜色
+        this.isFollowing = userInfoData.data.isFollowing;
+      }
 
-       
+      // 判断进入的空间是否是个人空间
+      let ownUserInfo = this.$store.state.userInfo;
+      if(ownUserInfo.userId === this.userInfo.userId){
+        this.isOwner = true;
+      }
+
+    // 首次进入时需要请求到作品信息
+      if(this.$route.name==="works"){
+        this.getSpaceData("works",{userId:userId});
+      }
     },
-    async toggleHandler(){
-      const data = await toggleFollowing({followUserId: this.userInfo.userId})
-      this.userInfo = data.data;
+    async handleClick(tab,event){
+      // 使用v-model="tabIndex"后，会自动绑定tab.name值
+      this.activeName = tab.name;
+      let userId = this.$route.query.userId;
+      this.$router.push({path: '/space/'+tab.name, query: {userId: userId}});
+
+      // 一句代码实现分开发送请求
+      this.getSpaceData(tab.name,{userId:userId});
     },
-    tabClickHandler(){
-      this.list = [];
-      this.$router.push({
-        name: this.activeName,
-        query: {
-          ...this.$route.query
-        }
-      })
+    async getSpaceData(tabName,params){
+      let data = await getSpaceTab(tabName,params);
+      this.info = data.data.list;
+    },
+    async toggleFollow(){
+      // 点击关注，并改变userInfo
+      // 如果是自己不能关注，如果是他人空间可关注
+      if(this.isOwner){
+        await this.$message.error('不能关注自己哦');
+        return;
+      }else{
+        // 获取当前vuex中的userInfo信息
+        let ownerId = this.$store.state.userInfo.userId;
+        let followUserId = this.$route.query.userId;
+        
+        // 注意参数形式(得到的数据是关注后当前显示用户的信息)
+        let followResult = await follow({userId:ownerId,followUserId:followUserId});
+        this.userInfo = followResult.data;
+        // 点击关注按钮后，需要局部刷新按钮样式（this.$nextTick()）
+        this.changeIsFollow();
+
+        // 提交给vuex的userInfo：更改用户信息
+        let userInfoCur = await getUserInfo();
+        this.$store.commit("updateUserInfo",userInfoCur.data);
+        
+      }
+    },
+    // 切换关注按钮不同状态
+    changeIsFollow(){
+      this.$nextTick(()=>{
+        this.isFollowing = !this.isFollowing;
+      });
     }
-  }
+  },
 }
 </script>
 

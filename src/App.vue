@@ -10,7 +10,7 @@
       </el-main>
       <el-footer>
         <div class="footer">
-          Copyright © 2019 - 2019 
+          Copyright © 2019 - 2022
         </div>
       </el-footer>
     </el-container>
@@ -18,7 +18,7 @@
   </div>
 </template>
 <script>
-import Header from '@/components/header'
+import Header from '@/components/header.vue'
 export default {
   components: {
     Header

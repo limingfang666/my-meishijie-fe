@@ -1,3 +1,11 @@
+<!--
+ * @Author: limingfang666 1275012490@qq.com
+ * @Date: 2022-06-24 11:43:58
+ * @LastEditors: limingfang666 1275012490@qq.com
+ * @LastEditTime: 2022-07-28 16:56:57
+ * @FilePath: \meishijie-backe:\StudyFile\kaikeba\works\Vue\VuePracticalProject\my-meishijie-fe\src\components\header.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 <template>
   <el-header style="height: auto;">
     <div class="header">
@@ -8,17 +16,17 @@
             </a>
           </el-col>
           <el-col :span="10" :offset="2"></el-col>
-          <el-col :span="6" :offset="3" class="avatar-box" v-show="isLogin">
-            <router-link :to="{name: 'space'}">
+          <el-col v-show="isLogin" :span="6" :offset="3" class="avatar-box">
+            <router-link :to="{path:'/space/works',query:{userId:userInfo.userId}}">
               <el-avatar style="vertical-align: middle;" shape="square" size="medium" :src="userInfo.avatar"></el-avatar>
             </router-link>
-            <router-link :to="{name: 'space'}" class="user-name">{{userInfo.name}}</router-link>
-            <router-link :to="{name: 'create'}" class="collection">发布菜谱</router-link>
-            <a href="javascript:;" class="collection" @click="loginOut">退出</a>
+            <router-link :to="{path:'/space/works',query:{userId:userInfo.userId}}" class="user-name">{{userInfo.name}}</router-link>
+            <router-link :to="{name:'create',query:{userId:userInfo.userId}}" class="collection">发布菜谱</router-link>
+             <a href="javascript:void(0)" class="collection" @click="clickLoginOut()">退出</a>
           </el-col>
-          <el-col :span="6" :offset="3" class="avatar-box" v-show="!isLogin">
-            <router-link :to="{name: 'login'}" class="user-name">登录</router-link>
-            <router-link :to="{name: 'login'}" class="collection">注册</router-link>
+          <el-col v-show="!isLogin" :span="6" :offset="3" class="avatar-box">
+            <router-link :to="{name:'login'}" class="user-name">登录</router-link>
+            <router-link :to="{name:'register'}" class="collection">注册</router-link>
           </el-col>
         </el-row>
       </div>
@@ -32,30 +40,33 @@
 </template>
 <script>
 import Menus from '@/components/menus'
-import {login_out} from '@/service/api'
+import {loginOut} from '@/service/api'
+// header是引入App.vue的获取不到this.$store实例
+// import Store from '@/store/'
 export default {
-  name: 'headers',
+  name: 'Header',
   components: {Menus},
   computed:{
     isLogin(){
       return this.$store.getters.isLogin;
     },
     userInfo(){
+      // vuex数据页面刷新就没有了,所以可以存放在localStorage里或者在组件守卫中操作
       return this.$store.state.userInfo;
     }
   },
   methods:{
-    loginOut(){
-      this.$confirm('真的确定要登出吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(async () => {
-        const data = await login_out();
-        localStorage.removeItem('token');
-        window.location.href = '/';
-      }).catch(() => {});
+     async clickLoginOut(){
+      // 退出并清空userInfo信息
       
+      let data = await loginOut();
+      // 没有权限 data.code===1  成功登出data.code===0
+      if(data.code===0 || data.code===1){
+        // 清空token，清空userInfo
+        localStorage.removeItem("token");
+        this.$store.commit("updateUserInfo",{});
+        window.location.href="/";
+      }
     }
   }
 }

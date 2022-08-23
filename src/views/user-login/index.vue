@@ -1,11 +1,11 @@
 <template>
   <div class="login-page">
 
-    <el-tabs v-model="activeName" type="card">
+    <el-tabs v-model="activeName" type="card" @tab-click="handleClick">
       <el-tab-pane label="登录" name="login">
         <login></login>
       </el-tab-pane>
-      <el-tab-pane label="注册" name="second">
+      <el-tab-pane label="注册" name="register">
         <Register></Register>
       </el-tab-pane>
     </el-tabs>
@@ -20,6 +20,22 @@ export default {
   data(){
     return {
       activeName: 'login'
+    }
+  },
+  watch:{
+    $route:{
+      handler(val) {
+        // 地址不同区别显示登录或注册tab
+        this.activeName = val.name;
+      },
+      immediate: true
+    }
+  },
+  methods:{
+    handleClick(tab){
+      this.activeName = tab.name;
+      // tab不同，动态修改地址栏
+      this.$router.push({name:tab.name});
     }
   }
 }

@@ -1,40 +1,49 @@
 <template>
   <div class="waterfall" ref="waterfall">
     <slot></slot>
-    <div class="waterfall-loading" ref='loading' v-show="isLoading">
+    <div class="waterfall-loading" ref='loading'>
       <i class="el-icon-loading"></i>
     </div>
   </div>
 </template>
 <script>
-// 什么时候到可视区中了
-// waterfall 元素的下边距 < 可视区的高度 到达可视区
 import {throttle} from 'throttle-debounce'
 export default {
   name: 'Waterfall',
   data(){
     return {
+      // 通过isLoading控制是否要加载
       isLoading: false
     }
   },
+  // 对DOM元素进行操作
   mounted(){
     // 优化，每隔一段时间再去执行函数，不用频繁触发  节流函数
+    this.scrollHandler = throttle(300, this.watchScroll.bind(this));
 
-    this.scrollHandler = throttle(300, this.scroll.bind(this));
-    window.addEventListener('scroll', this.scrollHandler);
+    // 监听scroll 事件（需要将this绑定给window,否则this指向实例）
+    window.addEventListener("scroll",this.scrollHandler);
+
   },
   destroyed(){
-    window.removeEventListener('scroll', this.scrollHandler)
+    // 设置定时器，停止
+    window.removeEventListener("scroll",this.scrollHandler);
   },
   methods:{
-    scroll(){
-      console.log(123)
-      if(this.isLoading) return;
-      if(this.$refs.waterfall.getBoundingClientRect().bottom < document.documentElement.clientHeight){
-        console.log('已到达可视区')
-        this.isLoading = true;
-        this.$emit('view')
-      }
+    watchScroll(){
+     if(this.isLoading) return;
+          // 元素（loading所在div）的下边距(object.getBoundingClientRect().bottom)距离浏览器顶部的高度<浏览器可视区高度
+    var browserHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+    // 注意因为waterfall-loading还没加载完所以是取不到的
+    var loadingHeight = this.$refs.waterfall.getBoundingClientRect().bottom;
+    console.log(browserHeight,loadingHeight);
+    // 当loadingHeight < browserHeight时，通知父级getMenusByPage，继续加载
+    if(loadingHeight < browserHeight){
+      // 修改isLoading 的值一定要在通知之前，否则第一次
+      this.isLoading = true;
+      this.$emit("parentHome");
+    }
+
     }
   }
 }

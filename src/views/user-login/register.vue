@@ -1,21 +1,26 @@
+<!--
+ * @Author: limingfang666 1275012490@qq.com
+ * @Date: 2022-06-24 11:43:59
+ * @LastEditors: limingfang666 1275012490@qq.com
+ * @LastEditTime: 2022-08-22 15:22:03
+ * @FilePath: \meishijie-backe:\StudyFile\kaikeba\works\Vue\VuePracticalProject\my-meishijie-fe\src\views\user-login\register.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 <template>
   <div class="login-section">
-    <!-- :rules="rules" -->
     <el-form 
-      label-position="top"
-      :rules="rules"
-      :model="ruleForm" status-icon 
-       ref="ruleForm" label-width="100px" class="demo-ruleForm"
+      :model="registerForm" :rules="rules" ref="registerForm" 
+      label-position="top" label-width="100px" class="demo-ruleForm"
     >
       <el-form-item label="用户名" prop="name">
-        <el-input type="text" v-model="ruleForm.name" autocomplete="off"></el-input>
+        <el-input type="text" v-model="registerForm.name" v-focus></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
-        <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
+        <el-input type="password" v-model="registerForm.password"></el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
-        <el-button @click="resetForm('ruleForm')">重置</el-button>
+        <el-button type="primary" @click="submitRegisterForm('registerForm')">提交</el-button>
+        <el-button @click="resetForm('registerForm')">重置</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -25,46 +30,56 @@ import {register} from '@/service/api';
 export default {
   data() {
     return {
-      ruleForm: {
-        name: '',
-        password: ''
+      registerForm:{
+        name:'',
+        password:''
       },
-      rules: {
+      rules:{
         name: [
-          { required: true, message: '请输入注册的用户名', trigger: 'blur' }
-        ],
+            { required: true, message: '请输入用户名', trigger: 'blur' },
+            // { min: 3, max: 5, message: '长度在 3 到 5 个字符', trigger: 'blur' }
+          ],
         password: [
-          { required: true, message: '请输入密码', trigger: 'blur' }
-        ]
+            { required: true, message: '请输入密码', trigger: 'blur' },
+            // { min: 3, max: 5, message: '长度在 3 到 5 个字符', trigger: 'blur' }
+          ],
       }
     };
   },
+    // 自定义指令
+  directives: {
+    focus: {
+      // 指令的定义
+      inserted: function (el) {
+        el.childNodes[1].focus();
+      }
+    }
+  },
   methods: {
-    submitForm(formName) {
-      this.$refs[formName].validate(async (valid) => {
-        if (valid) {
-          // 在这里向后端发送登录用户名和密码
-          const data = await register(this.ruleForm);
-          if(data.code === 0) {
+    submitRegisterForm(registerForm){
+      this.$refs[registerForm].validate(async (valid)=>{
+        if(valid){
+          // 用户名重复检验
+
+          let data = await register({name:this.registerForm.name,password:this.registerForm.password});
+          if(data.code===0){
+            this.registerForm.name='';
+            this.registerForm.password='';
             this.$message({
-              message: '恭喜你，注册成功，请登录',
+              message: '恭喜你，注册成功！请登录',
               type: 'success'
             });
           }
-          if(data.code === 1){
-            this.$message({
-              message: data.mes,
-              type: 'warning'
-            });
+          if(data.code===1){
+            this.$refs[registerForm].$message.error(data.mes);
+            return;
           }
-        } else {
-          console.log('error submit!!');
-          return false;
         }
+        
       });
     },
-    resetForm(formName) {
-      this.$refs[formName].resetFields();
+    resetForm(registerForm) {
+      this.$refs[registerForm].resetFields();
     }
   }
 }

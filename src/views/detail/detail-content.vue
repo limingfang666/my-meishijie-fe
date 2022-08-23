@@ -1,53 +1,66 @@
 <template>
   <section class="detail-content">
     <div class="detail-materials">
-      <p class=""><strong>“</strong>{{info.product_story}}<strong>”</strong></p>
+      <p class=""><strong>“</strong>{{menuInfo.product_story}}<strong>”</strong></p>
       <h2>用料</h2>
-      <div class="detail-materials-box clearfix" v-if="info.raw_material.main_material.length">
+      <div v-if="menuInfo.main_material && menuInfo.main_material.length" class="detail-materials-box clearfix">
         <h3>主料</h3>
         <ul>
-          <li class="" v-for="item in info.raw_material.main_material" :key="item._id">
-            {{item.name}}
-            <span>{{item.specs}}</span>
+        <!-- 数据不通过父组件传递过来，而通过 menuInfo.raw_material.main_material获取会报属性未定义(property undefined) -->
+          <li class="" v-for="mainMaterial in menuInfo.raw_material.main_material" :key="mainMaterial._id">
+            {{mainMaterial.name}}
+            <span>{{mainMaterial.specs}}</span>
           </li>
         </ul>
       </div>
-      <div class="detail-materials-box clearfix" v-if="info.raw_material.accessories_material.length">
+      <div v-if="menuInfo.accessories_material && menuInfo.accessories_material.length" class="detail-materials-box clearfix">
         <h3>辅料</h3>
         <ul>
-          <li class="" v-for="item in info.raw_material.accessories_material" :key="item._id">
-            {{item.name}}
-            <span>{{item.specs}}</span>
+          <li class="" v-for="accessoriesMaterial in menuInfo.raw_material.accessories_material" :key="accessoriesMaterial._id">
+            {{accessoriesMaterial.name}}
+            <span>{{accessoriesMaterial.specs}}</span>
           </li>
         </ul>
       </div>
-    </div>
+    </div> 
     <div class="detail-explain">
-      <h2>{{info.title}}的做法</h2>
-      <section class="detail-section clearfix" v-for="(item,index) in info.steps" :key="item._id">
+      <h2><span>{{menuInfo.title}}</span>的做法</h2>
+      <section class="detail-section clearfix" v-for="(step, index) in menuInfo.steps" :key="step._id">
         <em class="detail-number">{{index+1}}.</em>
         <div class="detail-explain-desc">
-          <p>{{item.describe}}</p>
-          <img class="conimg" :src="item.img_url" v-if="item.img_url" alt="">
+          <p>{{step.describe}}</p>
+          <img class="conimg" :src="step.img_url" alt="">
         </div>
       </section>
       <div class="skill">
         <h2>烹饪技巧</h2>
-        <p>{{info.skill}}</p>
+        <p>{{menuInfo.skill}}</p>
       </div>
     </div>
   </section>
 </template>
 <script>
+
 export default {
   name: 'DetailContent',
   props:{
-    info: {
-      type: Object,
-      default: () => ({})
+    menuInfo:{
+      // 如果使用时判断了是否存在可以不定义
+      main_material:{
+        type: Array,
+        default () {
+          return [];
+        }
+      },
+      accessories_material:{
+        type: Array,
+        default () {
+          return [];
+        }
+      },
     }
+  },
   }
-}
 </script>
 <style lang="stylus">
 .detail-content
@@ -92,6 +105,18 @@ export default {
           padding 0 10px
           border 1px solid #eee
   .detail-explain
+    h2
+      font-size 24px
+      color #333
+      height 66px
+      line-height 66px
+      border-bottom 1px solid #eee
+      span
+        height: 44px;
+        padding: 28px 0px;
+        line-height: 44px;
+        font-size: 36px;
+        color: #333;
     background-color #fff
     padding-bottom 20px
     .detail-section

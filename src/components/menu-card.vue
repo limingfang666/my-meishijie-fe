@@ -1,19 +1,14 @@
 <template>
   <el-row class="menu-card" type="flex" justify="start">
-    <el-col 
-      v-for="item in info" 
-      :key="item._id" 
-      style="flex:none;" 
-      :style="{'margin-left':marginLeft+'px'}"
-    >
+    <el-col style="flex:none;" :style="{'margin-left':marginLeft+'px'}"  v-for="menu in menuInfos" :key="menu._id">
       <el-card :body-style="{ padding: '0px' }">
-        <router-link :to="{name: 'detail', query:{menuId: item._id}}">
-          <img :src="item.product_pic_url" class="image" style="width: 232px;height: 232px;">
+        <router-link :to="{name:'detail',query:{menuId:menu._id}}">
+          <img :src="menu.product_pic_url" class="image" style="width: 232px;height: 232px;">
           <div style="padding: 14px;" class="menu-card-detail">
-            <strong>{{item.title}}</strong>
-            <span>{{item.comments_len}} 评论</span>
-            <router-link :to="{name:'space', query: {userId: item.userId}}" tag="em">
-            {{item.name}}
+            <strong>{{menu.title}}</strong>
+            <span>{{menu.comments_len}} 评论</span>
+            <router-link :to="{path:'/space/works',query:{userId:menu.userId}}" tag="em">
+            {{menu.name}}
             </router-link>
           </div>
         </router-link> 
@@ -30,9 +25,13 @@ export default {
       type: Number,
       default: 22
     },
-    info:{
+    menuInfos:{
       type: Array,
       default:() => []
+    },
+    created(){
+      console.log(this.info);
+      
     }
   }
 }
