@@ -2,7 +2,7 @@
  * @Author: limingfang666 1275012490@qq.com
  * @Date: 2022-06-24 11:43:59
  * @LastEditors: limingfang666 1275012490@qq.com
- * @LastEditTime: 2022-07-25 15:23:32
+ * @LastEditTime: 2022-08-24 14:47:02
  * @FilePath: \meishijie-backe:\StudyFile\kaikeba\works\Vue\VuePracticalProject\my-meishijie-fe\src\service\api.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -289,8 +289,8 @@ export async function getMenuInfo(params) {
  * @param {string} params.updateAt - 
  * @returns
  */
-export async function getCommentPost(params) {
-    return await http.post('/menu/comment', { params });
+export async function postComment(params) {
+    return await http.post('/menu/comment', params );
 }
 
 /** 获取评论信息-get
@@ -298,7 +298,7 @@ export async function getCommentPost(params) {
  * @param {Object} [params.userId] - 
  * @returns
  */
-export async function getComment(params) {
+export async function getComments(params) {
     return await http.get('/menu/comment', { params });
 }
 
