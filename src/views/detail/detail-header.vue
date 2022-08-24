@@ -1,6 +1,5 @@
 <template>
   <section class="detail-header">
-    {{menuInfo.product_pic_url}}
     <img class="detail-img" :src="menuInfo.product_pic_url" />
     <div class="detail-header-right">
       <div class="detail-title clearfix">
