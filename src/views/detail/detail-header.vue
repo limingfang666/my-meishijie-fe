@@ -29,17 +29,18 @@
 <!-- 显示用户信息 -->
 <!-- 从父组件传过来的对象或数组，一定要判断是否存在才能使用下面的属性 -->
       <div class="user" v-if="menuInfo.userInfo">
-        <router-link id="tongji_author_img" class="img" :to="{name:'space',query:{userId:menuInfo.userInfo.userId}}">
+        <router-link id="tongji_author_img" class="img" :to="{path:'/space/works',query:{userId:menuInfo.userInfo.userId}}">
           <img :src="menuInfo.userInfo.avatar">
         </router-link>
         <div class="info">
           <h4>
-            <router-link id="tongji_author" :to="{name:'space',query:{userId:menuInfo.userInfo.userId}}">
+            <!-- path:'/space/works'直接默认显示作品 -->
+            <router-link id="tongji_author" :to="{path:'/space/works',query:{userId:menuInfo.userInfo.userId}}">
               {{menuInfo.userInfo.name}}
             </router-link>
           </h4>
           <span>菜谱：{{menuInfo.userInfo.work_menus_len}}　/　关注：{{menuInfo.userInfo.following_len}}　/　粉丝：{{menuInfo.userInfo.follows_len}}</span>
-          <strong>最后更新时间：{{menuInfo.userInfo.createdAt|formatTime(10)}}</strong>
+          <strong>最后更新时间：{{menuInfo.userInfo.createdAt|dateTime}}</strong>
         </div>
       </div>
 
@@ -48,7 +49,7 @@
 </template>
 <script>
 // 引入过滤器，vue3中已经废弃，使用computed属性实现
-import '@/tools/filter';
+import '@/filter/filter';
 import { getCollection, collection } from '@/service/api'
 
 export default {

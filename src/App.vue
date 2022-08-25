@@ -10,7 +10,7 @@
       </el-main>
       <el-footer>
         <div class="footer">
-          Copyright © 2019 - 2022
+          Copyright © 2019 - {{curYear}}
         </div>
       </el-footer>
     </el-container>
@@ -19,10 +19,18 @@
 </template>
 <script>
 import Header from '@/components/header.vue'
+import moment from 'moment';
+
 export default {
   components: {
     Header
+  },
+  computed:{
+    curYear(){
+      return moment().format("YYYY");
+    }
   }
+
 }
 </script>
 

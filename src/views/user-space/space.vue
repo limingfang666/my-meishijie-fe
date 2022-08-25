@@ -8,7 +8,7 @@
       <div class="user-main">
         <h1>{{userInfo.name}}</h1>
         <span class="info">
-        {{userInfo.createdAt | formatTime(10)}}
+        {{userInfo.createdAt | dateTime}}
           <em>加入美食杰</em>
           <span v-if="isOwner">
           |
@@ -70,7 +70,7 @@
   </div>
 </template>
 <script>
-import { formatTime } from '@/tools/filter'
+import { dateTime } from '@/filter/filter'
 import { getUserInfo, getSpaceTab, follow } from "@/service/api";
 export default {
   name: 'Space',
@@ -90,6 +90,7 @@ export default {
     }
   },
   mounted(){
+    
     this.loadUser();
   },
   // 监听路由，如果space页面userId有变化（个人空间和他人空间的切换），需要刷新页面
