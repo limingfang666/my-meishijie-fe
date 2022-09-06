@@ -39,6 +39,7 @@ class HttpRequst {
             instance.interceptors.response.use(res => {
                 // 将响应数据code,status,data解构出来
                 const { code, status, data } = res;
+
                 return data;
             }, err => {
                 return Promise.reject(err);
@@ -290,7 +291,7 @@ export async function getMenuInfo(params) {
  * @returns
  */
 export async function postComment(params) {
-    return await http.post('/menu/comment', params );
+    return await http.post('/menu/comment', params);
 }
 
 /** 获取评论信息-get
@@ -300,17 +301,4 @@ export async function postComment(params) {
  */
 export async function getComments(params) {
     return await http.get('/menu/comment', { params });
-}
-
-// 封装方法：一句代码，根据参数不同，发起不同请求
-export async function getSpaceTab(tab, params) {
-    if (tab === 'works') {
-        return await getMenus(params);
-    } else if (tab === 'fans') {
-        return await getFans(params);
-    } else if (tab === 'following') {
-        return await following(params);
-    } else if (tab === 'collection') {
-        return await getCollection(params);
-    }
 }

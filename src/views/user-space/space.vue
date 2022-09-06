@@ -71,7 +71,34 @@
 </template>
 <script>
 import { dateTime } from '@/filter/filter'
-import { getUserInfo, getSpaceTab, follow } from "@/service/api";
+import { getUserInfo, getSpaceTab, follow, getMenus, getFans, following, getCollection } from "@/service/api";
+
+// 封装方法：一句代码，根据参数不同，发起不同请求
+// 这里的函数名要和this.activeName对应才能获取
+  let getSpaceInfo = {
+    async works(params) {
+      // 要用(await getMenus(params)).data才能请求正确
+      let data = (await getMenus(params)).data;
+      data.flag = "works";
+      return data;
+    },
+    async fans(params){
+      let data = (await getFans(params)).data;
+      data.flag = "fans";
+      return data;
+    },
+    async following(params){
+      let data = (await following(params)).data;
+      data.flag = "following";
+      return data;
+    },
+    async collection(params){
+      let data = (await getCollection(params)).data;
+      data.flag = "collection";
+      return data;
+    }
+  }
+
 export default {
   name: 'Space',
   data(){
@@ -80,13 +107,14 @@ export default {
       userInfo:{
       },
       // 传给子组件信息
-      info:{},
+      info:[],
       // 是否是自己的个人空间
       isOwner: false,
-      // 定义哪个tab为active
-      activeName: 'works',
+      // 定义哪个tab为active(直接设置某个值，当手动刷新时会直接跳转为固定tab,所以设置为和路由一致即可)
+      activeName: this.$route.name,
       // 关注按钮颜色
       isFollowing: true,
+      queen: {}
     }
   },
   mounted(){
@@ -104,7 +132,7 @@ export default {
   },
   methods:{
     async loadUser(){
-        // 根据userId获取用户信息
+        // 根据userId获取用户信息（示例处理是进入个人空间没有带userId，我这里做法是进入个人和他人空间都有userId）
       let userId = this.$route.query.userId;
       let userInfoData = await getUserInfo({userId:userId});
       if(userInfoData && userInfoData.code === 0){
@@ -119,23 +147,47 @@ export default {
         this.isOwner = true;
       }
 
-    // 首次进入时需要请求到作品信息
-      if(this.$route.name==="works"){
-        this.getSpaceData("works",{userId:userId});
-      }
+    // 首次进入时需要请求到作品信息(this.activeName此时为works)
+       this.getSpaceData();
     },
     async handleClick(tab,event){
       // 使用v-model="tabIndex"后，会自动绑定tab.name值
       this.activeName = tab.name;
-      let userId = this.$route.query.userId;
-      this.$router.push({path: '/space/'+tab.name, query: {userId: userId}});
+      // 重复点击或者快速切换导致一致时
+      if(tab.name===this.$route.name){
+        return;
+      }
+      
+      this.$router.push({
+        name:this.activeName,
+        query:{
+          ...this.$route.query
+        }
+      });
 
       // 一句代码实现分开发送请求
-      this.getSpaceData(tab.name,{userId:userId});
+      this.getSpaceData();
     },
-    async getSpaceData(tabName,params){
-      let data = await getSpaceTab(tabName,params);
-      this.info = data.data.list;
+    async getSpaceData(){
+      // 每次发起请求前先清空前一次请求的数据
+      this.info = [];
+      // 第一种方式实现数据分类获取：返回数据添加flag
+      let data = await getSpaceInfo[this.activeName]({userId:this.$route.query.userId});
+      // 切换太快时数据会错乱
+      if(this.activeName === data.flag){
+        this.info = data.list;
+      }
+
+      // 第二种方式实现数据分类获取：闭包和第三方变量queen
+      // (async (activeName)=>{
+      //   let data = await getSpaceInfo[activeName]({userId:this.$route.query.userId});
+      //    this.queen[activeName] = data.list;  // this.queen.works = 作品的数据
+      //     // 取当前路由name对应的数据
+      //     if(activeName === this.activeName){
+      //       this.info = this.queen[this.activeName];
+      //     }
+      //     this.queen = {};
+      // })(this.activeName)
     },
     async toggleFollow(){
       // 点击关注，并改变userInfo
@@ -151,8 +203,6 @@ export default {
         // 注意参数形式(得到的数据是关注后当前显示用户的信息)
         let followResult = await follow({userId:ownerId,followUserId:followUserId});
         this.userInfo = followResult.data;
-        // 点击关注按钮后，需要局部刷新按钮样式（this.$nextTick()）
-        this.changeIsFollow();
 
         // 提交给vuex的userInfo：更改用户信息
         let userInfoCur = await getUserInfo();
@@ -160,12 +210,6 @@ export default {
         
       }
     },
-    // 切换关注按钮不同状态
-    changeIsFollow(){
-      this.$nextTick(()=>{
-        this.isFollowing = !this.isFollowing;
-      });
-    }
   },
 }
 </script>
