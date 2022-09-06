@@ -30,6 +30,10 @@ vue-cli3 webpack配置给隐藏了 通过服务来启动webpack配置，升级�
 
 单页应用 index.html
 
+.browserslistrc 打包时根据配置会插入一些兼容性的代码
+postcss.config.js 某些css特性会根据不同浏览器给加入不同前缀
+vue.config.js webpack配置没有了，通过服务来启动webpack配置，升级服务。这个文件是webpace开发者自己写的配置，vue-cli会把开发者自己写的配置合并到内置的webpack配置中
+
 Proxy error: Could not proxy request /banner from localhost:8081 to  http://127.0.0.1:7001 (ECONNREFUSED).
 
 启动后端的服务
@@ -77,4 +81,4 @@ Proxy error: Could not proxy request /banner from localhost:8081 to  http://127.
         放在请求header，约定key值 authorization
     不成功
 
-菜谱：
+

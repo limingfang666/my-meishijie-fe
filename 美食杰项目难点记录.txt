@@ -420,3 +420,16 @@ https://www.jb51.net/article/199265.htm
     margin-right 2px
     // required:true的*号 和input框显示在一行，将width: 100%;改为width: 86%;
     width: 86%;
+
+    28.路由文件按需加载，将多个文件打包到一个文件
+const Login = () =>
+    import ( /* webpackChunkName: "login" */ '@/views/user-login/index.vue');
+const Register = () =>
+    import ( /* webpackChunkName: "register" */ '@/views/user-login/index.vue');
+
+29.封装http发送axios请求接口
+
+30.如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
+
+31.登录鉴权：路由父级与子级鉴权配置，路由router.beforeEach钩子函数进行鉴权
+二级路由和一级路由登录鉴权：需要使用to.matched.some(item => item.meta.login === true) 判断二级路由和一级路由都需要登录
