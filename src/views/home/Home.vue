@@ -43,8 +43,9 @@ export default {
       // 分页显示menu信息
       menuInfos:[],
       page: 1,
-      total: 0,
-      pageSize:0,
+      // 如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
+      // total: 0,
+      // pageSize:0,
     }
   },
   async mounted(){
@@ -64,6 +65,7 @@ export default {
         // 因为后续加载的数据也是放在menuInfos里，所以需要保存原有数据
         this.menuInfos.push(...menusData.data.list);
 
+        // 如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
         this.total = menusData.data.total;
         this.pageSize = menusData.data.page_size;
         
