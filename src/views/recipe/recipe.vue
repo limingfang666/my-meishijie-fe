@@ -26,15 +26,19 @@
                 <div class="filter-box">
                     <h4>筛选</h4>
                     <!-- 筛选 start -->
-                    <el-collapse>
+                    <!-- 这里propertiesActiveName必须和 :name="item.parent_type"的值一致才会展开-->
+                    <el-collapse v-model="propertiesActiveName">
+                        {{propertiesActiveName}}
+                    <!-- <el-collapse> -->
                         <el-collapse-item
                             v-for="item in properties"
                             :key="item.parent_type"
                             :title="item.parent_name"
+                            :name="item.parent_type"
                         >
                             <div class="filter-tags"
                             >
-                                <el-tag type="info" @click="clickType($event,property.type)"
+                                <el-tag type="info" @click="clickType(property)"
                                     v-for="property in item.list"
                                     :title="property.title"
                                     :key="property.type"
@@ -84,15 +88,19 @@ export default {
             classifies:[],
             properties:[],
             classifyType:'1-1',
-            // 地址栏query 中property有多个值，页面渲染时，如果在query里包含当前，就设置class为active
+            // 地址栏query 中property有多个值，propertyType用于记录变化前后的参数值
             propertyType:{},
+            // 刷新后显示当前点击后的值（展开或收缩）,页面渲染时，如果在query里包含当前，就设置class为active
+            propertiesActiveName:[],
+            
             // 用于分页
             pageSize:5,
             total:0,
             page:1,
-            // 用于发起请求的数据
+
+            // 参数过滤后的所有menu菜单
             menuInfos:[],
-            propertyInfo:[],
+
             loading:true
         }
     },
@@ -118,10 +126,6 @@ export default {
                     this.queryMenus();
                 }
 
-                // property点击时，路由变化后&craft=1-1&flavor=2-2&hard=3-2&people=4-1，如果路由中存在的和该点击元素的值相同，则设置tag-selected样式为true 
-                // 注意设置值要在路由变化后设置，在点击方法中设置会是点击前的query值
-                this.propertyType = this.$route.query;
-                
             },
             immediate:true
         }
@@ -137,9 +141,21 @@ export default {
         getProperty().then((res)=>{
             if(res.ec === 200){
                 this.properties = res.data;
+
+                // 只有在这里从query过滤出this.propertyType和this.propertiesActiveName，在监听$route时处理监听不到手动刷新路由不变时的propertiesActiveName
+                let query = {...this.$route.query};
+                // property表示上一次调用时的返回值， 或者初始值this.propertyType，item表示当前正在处理的数组this.properties元素
+                this.propertyType = this.properties.reduce((property, item) => {
+                    property[item.title] = query[item.title] ? query[item.title] : '';
+                    // 设置当前显示的title的值，用于展开已选择项
+                    if(property[item.title]){
+                        this.propertiesActiveName.push(property[item.title][0]);
+                    }
+                    return property;
+                },{});//这里的{}为传入的初始值
             }
         });
-        
+
         // 手动刷新地址栏时，也需要发起请求
         this.queryMenus();
     },
@@ -155,56 +171,35 @@ export default {
                 }
             });
         },
-        clickType(e,type){
-            let {title} = e.target;
-            // 判断如果this.propertyType[title] === type时过滤掉当前query中的title，否则会报错Uncaught (in promise) NavigationDuplicated {_name: 'NavigationDuplicated', name: 'NavigationDuplicated', message: 'Navigating to current location ("/recipe?classify=1-1&page=1&craft=1-2") is not allowed', stack: 'Error\n    at new NavigationDuplicated (webpack-int…node_modules/vue/dist/vue.runtime.esm.js:1853:26)'}
-            if(this.$route.query[`${title}`] === type){
-                delete this.propertyInfo[`${title}`];
-                this.$router.push({
-                    path:this.$route.path,
-                    // this.propertyInfo是专门存储各个property点击或取消后的值，query参数可是使用其进行设置
-                    // 使用this.$route.query[`${title}`]只能控制当前点击的property单个值，不能记录所有点击或取消或的property值
-                    query:{
-                        ...this.propertyInfo
-                    }
-                });
+        clickType(property){
+            // 注意：将当前的query解构出来，以备增加或介绍query参数，避免重复路由地址刷新（直接delete this.$route.query不行）
+            let query = {...this.$route.query};
+            
+            // 如果点击的和地址栏的一致去除该query参数,且去除this.propertyType和query中已有元素
+            if(query[property.title]===property.type){
+                this.propertyType[property.title] = '';
+                delete query[property.title];
 
             }else{
-                this.$router.push({
-                    path:this.$route.path,
-                    query:{
-                        ...this.$route.query,
-                        // ES6动态设置对象的key值[]
-                        [title]:type
-                    }
-                });
+                this.propertyType[property.title] = property.type;
+                query[property.title] = property.type;
             }
-            // 记录property选择项：将参数及值设置进请求数据中
-            this.propertyInfo = {...this.propertyInfo,[title]:type};
-            // 如果this.propertyType[title] === type证明地址栏传过来有该title对象，undefined表示点击，需要给地址栏加上该参数
+            this.$router.push({
+                query
+            });
+
         },
         queryMenus(){
             // 保证每次发起请求都会先显示遮罩层
             this.loading = true;
-            // 参数结构：{page: 1, classify: '1-2', property: {…}}
-            // 手动刷新时property:this.propertyInfo需要从地址栏获取
-            if(!this.propertyInfo.length){
-                let queryInfo = this.$route.query;
-                // 过滤对象方法
-                // 方法一：delete
-                // delete queryInfo.page;
-                // delete queryInfo.classify;
-                // this.propertyInfo = queryInfo;
 
-                // 方法二：解构
-                const { page,classify, ...query} = queryInfo;
-                this.propertyInfo = query;
-            }
-
+            const { page,classify, ...query} = this.$route.query;
+            this.propertyType = query;
+                
             // 如果手动刷新或分享地址栏时，需要获取page值,否则使用默认page值1
-            this.page = Number(this.$route.query.page) || this.page;
+            this.page = Number(page) || this.page;
             
-            getMenus({page:this.page,classify:this.classifyType,property:this.propertyInfo}).then(res=>{
+            getMenus({page:this.page, classify, property:this.propertyType}).then(res=>{
                 // 每次发起请求之前先显示遮罩层
                 // 数据出来后，将loading设置为false
                 if(res.code===0){

@@ -96,14 +96,14 @@ const router = new VueRouter({
 router.beforeEach(async(to, from, next) => {
     // 判断是否需要鉴权登录
     // 因为有二级路由，父级路由或者子路由中其中有一个需要登录，则需要登录
-    const isLogin = to.matched.some(item => item.meta.login === true);
+    const metaLogin = to.matched.some(item => item.meta.login === true);
 
     // 只判断token不行，因为有可能通过页面修改token值直接登录，所以需要每次请求都发送后端校验是否真的已登录(不能放在判断token时存，因为所有页面都需要用到)
     const userInfo = await getUserInfo();
     //将userInfo信息存到vuex中(此处取不到this，所以需要引入Store)
     Store.commit("updateUserInfo", userInfo.data);
 
-    if (!!isLogin) {
+    if (metaLogin) {
         // 通过是否有token判断是否登录(有token则已登录)
         const token = localStorage.getItem("token");
 
@@ -127,7 +127,7 @@ router.beforeEach(async(to, from, next) => {
             if ((!token || userInfo.code === 1) && to.name !== 'login') {
                 next({ name: 'login' });
             }
-            // 有token时，将token清空
+            // 有token时，将token清空。userInfo.code非0非1，后端登录返回错误但是有token信息，token有可能是被伪造的
             if (!!token) {
                 localStorage.removeItem("token");
             }

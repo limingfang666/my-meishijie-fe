@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <!-- 轮播 start -->
-    <el-carousel :interval="5000" type="card" height="300px">
+    <el-carousel :interval="5000" type="card" height="300px" v-if="banners.length>0">
       <el-carousel-item v-for="banner in banners" :key="banner._id">
         <!-- banner页面，点击进入详情页 -->
         <router-link :to="{name:'detail',query:{menuId:banner._id}}">
@@ -18,8 +18,7 @@
     <!-- 内容精选 瀑布流形式 start -->
     <div>
       <h2>内容精选</h2>
-      <waterfall ref="waterfall" @parentHome="menuInfoHandle">
-      <!-- <waterfall ref="waterfall"> -->
+      <waterfall ref="waterfall" @loadContinue="loadInfo">
         <menu-card :margin-left="13" :menuInfos="menuInfos"></menu-card>
       </waterfall>
     </div>
@@ -30,14 +29,12 @@
 <script>
 import MenuCard from '@/components/menu-card.vue'
 import Waterfall from '@/components/waterfall.vue'
+import { getBanner, getMenus } from '@/service/api'
 
-// 引入axios请求封装类
-import { log } from 'util'
-// 引入 注册 使用
 export default {
   name: 'home',
   components: {
-    MenuCard: MenuCard,
+    MenuCard,
     Waterfall
   },
   data(){
@@ -46,50 +43,55 @@ export default {
       // 分页显示menu信息
       menuInfos:[],
       page: 1,
-      pages: 0
+      // 如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
+      // total: 0,
+      // pageSize:0,
     }
   },
-  // created()在实例创建完成后被立即调用，该阶段完成了对 `data` 中的数据的 `observer`，该阶段可以处理一些异步任务
-  created(){
-    // 获取banner
-    this.getBanner();
-  },
-  // 该阶段执行完了模板解析，以及挂载。同时组件根组件元素被赋给了 `$el` 属性，该阶段可以通过 <u>DOM</u> 操作来对组件内部元素进行处理了
   async mounted(){
-     await this.getMenus();
+    // 获取banner
+    let bannerData = await getBanner();
+    if(bannerData.code===0){
+      this.banners = bannerData.data.list;
+    }
+
+    // 获取menus
+    await this.getHomeMenus();
   },
   methods:{
-    async getBanner(){
-      await this.$store.dispatch("getBannerAct");
-      this.banners = this.$store.state.banners;
+    async getHomeMenus(){
+      let menusData = await getMenus({page:this.page});
+      if(menusData.code=== 0){
+        // 因为后续加载的数据也是放在menuInfos里，所以需要保存原有数据
+        this.menuInfos.push(...menusData.data.list);
+
+        // 如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
+        this.total = menusData.data.total;
+        this.pageSize = menusData.data.page_size;
+        
+        // 加载完成后，将loading状态设置为false
+        this.$refs['waterfall'].loading = false;
+      }
+      
     },
-    async getMenus(){
-       await this.$store.dispatch("getMenusAct",this.page);
-      this.menuInfos = this.$store.state.menuInfos.list;
-    },
-     // 子级waterfall通知到父级再次调用请求
-    menuInfoHandle(){
-      console.log("父级收到了子级回调");
-      // 每次通知父级后page++
-       this.pages = Math.ceil(this.$store.state.menuInfos.total/this.$store.state.menuInfos.page_size);
+    async loadInfo(){
+      console.log("继续loading");
       this.page++;
-      if(this.page>this.pages){
-        this.$refs.waterfall.isLoading = false;
+
+      let pageCount = Math.ceil(this.total/this.pageSize);
+      if(this.page>pageCount){
+        // 最后一次没有调到getHomeMenus方法里的更改false
+        this.$refs['waterfall'].loading = false;
+        this.$message({
+          message:"我是有底线的哦~",
+          type:"info"
+        });
         return;
       }
-      this.$refs.waterfall.isLoading = true;
-          // 获取所有menu
-      this.getMenus();
-      this.$refs.waterfall.isLoading = false;
-    }
-  },
-  beforeRouteLeave(to,from,next){
-    // 在跳转页面前，清空menu菜单(这里是为了解决从menu跳转其他页面，后退后，数据重复问题，
-    // 但是这样做其实vuex缓存就没什么太大作用了（至少在menu页面有缓存到数据），如果直接请求跳转后回退是不会出现数据重复问题的)
-    this.$store.state.menuInfos = {};
-    next();
+
+      await this.getHomeMenus();
+    },
   }
-  
 }
 </script>
 <style lang="stylus">

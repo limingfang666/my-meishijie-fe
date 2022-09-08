@@ -1,0 +1,435 @@
+1.自定义校验规则：多个下拉框同时校验（子组件可以实现多错误信息同时显示，在当前表单中只能显示一个错误信息，当前面的选择成功后，才会显示下一个错误信息）
+2.input父组件和子组件双向绑定，$emit()通知父级，并带参数
+3.子组件表单校验：有自己的表单校验方法及规则，父级通过ref调用子级的validate()方法
+4.子组件内新增后，同时校验：表单校验+onblur方法传入新增后对应index
+5.父组件和子组件同时做表单检验（Promise.all）
+问题:使用Promise.all([])进行父组件表单验证和多个子组件表单验证，只进行了第一个表单验证并返回状态为fullfilled,其他的状态都为pending
+解决：校验方法逻辑问题，new Promise里必须接收到返回值，才能知道最终执行结果，才能返回执行的状态是什么（fullfilled，pending，rejected）。
+new Promise下，是表单验证validate()方法，在此方法调用时，会调用校验规则或者自定义校验规则。
+此处，if外也要写callback()才会在有值符合条件的情况下，返回true，否则new Promise()会一直是pengding状态
+var validateName = (rule, value, callback) => {
+      // 注意此处是input双向绑定，所以通过this.value就可以得到input框输入的值
+      if (this.value[this.index].name === "") {
+        callback(new Error("请输入材料！"));
+      } 
+      callback();
+    };
+6.:loading="loading"
+提交或修改后，需要对应修改loading值
+7.el-form-item下textarea宽度设置不起作用：  .el-form-item :last-child { width: 130%;}只能设置textarea框宽度，如果加了错误校验，报错时宽度又会回到原来大小
+  .el-form-item :last-child
+    width: 150%
+  div.introduce-text.el-textarea
+    width: 100%
+8.v-model双向绑定input，textarea
+9.限制图片显示大小。
+imgSty:{
+         width: '232px',
+         height: '232px'
+      }
+imgSty通过父级传入子级
+<el-upload ...>
+ <img :src="imgUrl" v-if="imgUrl" :style="imgSty"/>
+</el-upload>
+9.上传图片组件组件
+限制只能上传一个文件：设置属性:file-list="fileList" :on-change="handleChange"，并在handleChange方法中处理fileList，最后手动触发submit()
+ handleChange(file,fileList){
+      if(fileList && fileList.length>=2){
+        fileList.shift();
+      }
+      this.$refs.upload.submit();
+    }
+10.产品图刷新就没有了
+图片没有正真上传到后端，此处是action中upload必须带参数type
+
+11.图片上传类型限制
+属性：accept=".jpg,.png"
+方法：
+:before-upload="beforeAvatarUpload"
+
+beforeUpload(file){
+      // accept="image/jpeg,image/jpg,image/png"也可设置在样式中，这个属性设置后，点击上传后，浏览文件夹中不会展示除设置类型以外的图片
+      // const isJPGOrPNG = file.type === 'image/jpeg' || 'image/png';
+      const isLt50KB = file.size / 1024 < 100;
+
+        // if (!isJPGOrPNG) {
+        //   this.$message.error('上传头像图片只能是 JPG 或者 PNG 格式!');
+        // }
+        if (!isLt50KB) {
+          this.$message.error('上传头像图片大小不能超过 100KB!');
+        }
+        // return isJPGOrPNG && isLt50KB;
+        return isLt50KB;
+    },
+12.报错 Error in render: "TypeError: Cannot read properties of undefined (reading 'length')"
+ v-if="menuInfo.main_material.length"
+     menuInfo:{
+      main_material:{
+        type: Array,
+        default () {
+          return [];
+        }
+      },
+	 }
+解决：方法一：对象或数组，一定要判断是否存在才能使用下面的属性 v-if="menuInfo.main_material && menuInfo.main_material.length"
+方法二：watch: {
+  dataPicture: {
+    handler (newVal, oldVal) {
+      console.log(newVal, '这样也可以得到数据~~~');
+      // this.list = newVal
+      },
+    immediate: true,
+    deep: true,
+  },
+}
+或者要做什么处理，在updated里处理，此时父组件已mounted完成
+原因：父组件生命周期中会先看看子组件的生命周期有没有走完，子组件生命周期走完了，才会走父组件的生命周期。
+父子组件生命周期执行顺序
+
+加载渲染数据过程
+父组件 beforeCreate -->
+
+父组件 created -->
+
+父组件 beforeMount -->
+
+子组件 beforeCreate -->
+
+子组件 created -->
+
+子组件 beforeMount -->
+
+子组件 mounted -->
+
+父组件 mounted -->
+
+更新渲染数据过程
+父组件 beforeUpdate -->
+
+子组件 beforeUpdate -->
+
+子组件 updated -->
+
+父组件 updated -->
+
+销毁组件数据过程
+父组件 beforeDestroy -->
+
+子组件 beforeDestroy -->
+
+子组件 destroyed -->
+
+父组件 destroyed
+
+13.后台规定了图片尺寸大小：获取图片上传像素
+参考：https://blog.csdn.net/u012443286/article/details/106146368/
+一定要在fileReader.onload 且 img.onload 之后再获取img像素才是正确的
+      let fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      let img = new Image();
+      let _this = this;
+      
+      fileReader.onload = function(e) {
+        let base64 = this.result;
+        img.src = base64;
+		img.onload = function(){
+		 console.log(img.width, img.height);
+		}
+	}
+	
+14.上传图片时，图片会加载两次，也会请求后端两次
+<el-upload>组件会自动上传，又在on-change又手动上传了一次
+如果需要手动上传，关闭自动上传:auto-upload="false"，不需要手动上传就不要this.$refs.upload.submit();
+
+15.elementUI 官方文档中说明before-upload上传文件之前的钩子，参数为上传的文件，若返回 false 或者返回 Promise 且被 reject，则停止上传。
+但是实际测试，返回false还是会发起请求，可能是使用了自动提交（auto-upload），只有返回new Promise()且有reject()才停止上传
+
+15.图片显示不了，图片显示一定要是后端传过来的url地址
+handleSuccess(res, file) {
+      if(res.code===0){
+        this.$message({
+          message:"图片上传成功",
+          type:"success"
+        });
+      this.$emit("imgUploaded", res.data.url);
+      }
+    },
+
+
+16.菜谱分类和属性 点击后样式设置
+当点击后更改路由路径，而在监听路由$route中的值有变化后，设置对应样式标识，渲染时标识满足条件即设置值
+<el-tag type="info" @click="clickType($event,property.type)"
+                                    v-for="property in item.list"
+                                    :title="property.title"
+                                    :key="property.type"
+                                    :name="property.type"
+                                    :class="{'tag-selected':propertyType[property.title]==property.type}"
+                                >{{property.name}}</el-tag>
+
+clickType(e,type){
+            this.$router.push({
+                path:this.$route.path,
+                query:{
+                    ...this.$route.query,
+                    // ES6动态设置对象的key值[]
+                    [e.target.title]:type
+                }
+            });
+        },
+...
+watch:{
+        // 监听$route，如果没有classify则设置默认
+        $route:{
+            handler(){         
+               // property点击时，路由变化后&craft=1-1&flavor=2-2&hard=3-2&people=4-1，如果路由中存在的和该点击元素的值相同，则设置tag-selected样式为true 
+                // 注意设置值要在路由变化后设置，在点击方法中设置会是点击前的query值
+                this.propertyType = this.$route.query;
+            },
+            immediate:true
+        }
+    },
+	
+17.过滤对象方法
+let queryInfo = this.$route.query;
+// 过滤对象方法
+// 方法一：delete
+// delete queryInfo.page;
+// delete queryInfo.classify;
+// this.propertyInfo = queryInfo;
+
+// 方法二：解构
+const { page,classify, ...query} = queryInfo;
+this.propertyInfo = query;
+
+18.点击上一页和下一页时，报错vue-router.esm.js?8c4f:2085 Uncaught (in promise) undefined，但是能跳转页面
+<el-pagination v-if="menuInfos.length"
+                        style="display: inline-block;"
+                        :pageSize="pageSize"
+                        :total="total"
+                        :current-page.sync="page"
+                        @current-change="currentChange"
+                        @prev-click="preClick"
+                        @next-click="nextClick"
+                    >
+                    </el-pagination>
+原因：el-pagination组件中使用了 @current-change="currentChange"后，prev-click和next-click点击时也会触发current-change方法
+解决：直接点击某页时this.page和this.$route.query.page 相等，而prev-click和next-click点击时this.$route.query.page为undefined
+所以只需要在currentChange判断相等时才触发即可
+        currentChange(){
+             // 点击的下一页，所有this.page会-1
+            if(this.$route.query.page===this.page){
+                this.changePage(this.page);
+            }
+        },
+19.对象动态取值
+title为变量，propertyType为对象或数组
+this.propertyType[`${title}`];
+
+20.el-menu 在手动刷新地址栏后显示的不是当前sub-menu
+解决：监听路由地址并通过this.$nextTick()设置动态activerouter
+
+  <el-menu :default-active="activerouter" class="el-menu-demo" mode="horizontal" :unique-opened='true'>
+    <el-menu-item index="1">
+      <router-link class="nav-link" :to="{name:'home'}">首页</router-link>
+    </el-menu-item>
+    <el-menu-item index="2">
+      <router-link class="nav-link" :to="{name:'recipe'}">菜谱大全</router-link>
+    </el-menu-item>
+  </el-menu>
+
+  data(){
+    return {
+      activerouter :'1'
+    }
+  },
+  watch:{
+    $route:{
+      handler(){
+        // 监听，如果路由地址变化，则改变nav-link
+        // 因为el-menu组件没有任何更改，所以直接设置是
+          this.$nextTick(()=>{
+            if(this.$route.name==='recipe'){
+              this.activerouter = '2';
+            }else{
+              this.activerouter = '1';
+            }
+          })
+      },
+      immediate:true
+    }
+  },
+
+21.this.$nextTick()使用场景
+Vue 实现响应式并不是数据发生变化之后 DOM 立即变化，而是按一定的策略进行 DOM 的更新。
+Vue 在修改数据后，视图不会立刻更新，而是等同一事件循环中的所有数据变化完成之后，再统一进行视图更新。
+首先修改数据，这是同步任务。同一事件循环的所有的同步任务都在主线程上执行，形成一个执行栈，此时还未涉及 DOM 。
+然后Vue 开启一个异步队列，并缓冲在此事件循环中发生的所有数据改变。如果同一个 watcher 被多次触发，只会被推入到队列中一次。
+this.$nextTick()使用情景：
+created 和 mounted 阶段，如果需要操作渲染后的视图，要使用 nextTick 方法。因为mounted不会承诺其子组件也挂载完毕
+通过v-show切换到输入框后，自动聚焦用得到。
+点击获取某个元素的style样式时用得到
+
+vue的降级策略（兼容）
+promise -> MutationObserver ->（macro-task） setTimeout
+创建一个新的任务，优先使用 Promise，如果浏览器不支持，再尝试 MutationObserver。又不支持，只能用 setTimeout 创建 task 了。
+具体有下面几点变动的监听：
+childList：子元素的变动 
+attributes：属性的变动 
+characterData：节点内容或节点文本的变动 
+subtree：所有下属节点（包括子节点和子节点的子节点）的变动
+
+————————————————
+版权声明：本文为CSDN博主「前端小端长」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/zhang1339435196/article/details/102911923
+
+22.多个侧边菜单同时选择和取消选中
+设置propertyInfo:[],用于接收每次选中，发送请求时，同时以参数形式传给后端
+在点击时将原有的和当前选中的放入数据中 this.propertyInfo = {...this.propertyInfo,[title]:type};
+clickType(e,type){
+            let {title} = e.target;
+            // 判断如果this.propertyType[title] === type时过滤掉当前query中的title，否则会报错Uncaught (in promise) NavigationDuplicated {_name: 'NavigationDuplicated', name: 'NavigationDuplicated', message: 'Navigating to current location ("/recipe?classify=1-1&page=1&craft=1-2") is not allowed', stack: 'Error\n    at new NavigationDuplicated (webpack-int…node_modules/vue/dist/vue.runtime.esm.js:1853:26)'}
+            if(this.$route.query[`${title}`] === type){
+                delete this.propertyInfo[`${title}`];
+                this.$router.push({
+                    path:this.$route.path,
+                    // this.propertyInfo是专门存储各个property点击或取消后的值，query参数可是使用其进行设置
+                    // 使用this.$route.query[`${title}`]只能控制当前点击的property单个值，不能记录所有点击或取消或的property值
+                    query:{
+                        ...this.propertyInfo
+                    }
+                });
+
+            }else{
+                this.$router.push({
+                    path:this.$route.path,
+                    query:{
+                        ...this.$route.query,
+                        // ES6动态设置对象的key值[]
+                        [title]:type
+                    }
+                });
+            }
+            // 记录property选择项：将参数及值设置进请求数据中
+            this.propertyInfo = {...this.propertyInfo,[title]:type};
+            // 如果this.propertyType[title] === type证明地址栏传过来有该title对象，undefined表示点击，需要给地址栏加上该参数
+        },
+
+
+23:使用this.$refs['commentTextArea'].value = ''清空会报错
+[Vue warn]: Avoid mutating a prop directly since the value will be overwritten whenever the parent component re-renders. Instead, use a data or computed property based on the prop's value. Prop being mutated: "value"
+[Vue warn]：避免直接改变属性，因为每当父组件重新渲染时，该值将被覆盖。相反，使用基于属性值的数据或计算属性。正在变异的属性：“值”
+解决：使用this.$refs['commentForm'].resetFields();即可
+
+24.时间日期格式化
+使用npm i --save moment
+
+{{userInfo.createdAt | dateTime}}
+
+import Vue from 'vue'
+import moment from 'moment';
+
+moment.updateLocale('zh-cn', {
+    // 注意meridiem在moment()下的_local对象下，所以访问路径必须为moment()._locale.meridiem()
+	// 官方文档：逻辑有问题
+    meridiem: function(hour, minute, isLowercase) {
+        if (hour < 6) {
+            return "凌晨";
+        } else if (hour >= 6 && hour < 9) {
+            return "早上";
+        } else if (hour >= 6 && hour < 11) {
+            return "上午";
+        } else if (hour >= 11 && hour < 13) {
+            return "中午";
+        } else if (hour >= 13 && hour < 18) {
+            return "下午";
+        } else {
+            return "晚上";
+        }
+    },
+   
+});
+
+Vue.filter('dateTime', (val) => {
+    
+    return moment(val).format('YYYY年MM月DD日') + ' ' +
+        moment(val)._locale.meridiem(moment(val).format('hh'), moment(val).format('mm'), false) + ' ' +
+        moment(val).format('hh') + '点' +
+        moment(val).format('mm') + '分';
+});
+
+25.首页瀑布流
+首页需要不断发起请求，这种需求不适合用vuex存储数据
+瀑布流子组件中设置loading用于控制是否加载，初始值为true
+首次进入，加载第一页5条数据，加载完成后将loading=false
+因为loading在父组件加载完数据后会设置为false，所以也可将其在子组件中作为父组件数据是否加载完成的标识（因为如果父组件数据没有加载完成，就滚动滚动条的话获取的waterfall底部距离浏览器顶部距离不正确）
+子组件滑动滚动条后，判断如果当前的waterfall的底部距离浏览器顶部的高度 小于 浏览器可视区高度，即可加载下一页
+加载时通过loading标识决定，如果为true则表示正在loading，此时不能继续加载
+加载下一页，必须有子组件waterfall通知父组件home进行加载
+加载下一页，即this.page++,并发起请求
+发起请求前，判断数据是否全部加载完成this.page>Math.ceil(this.total/this.pageSize)，如果是，则不再发起请求，且将loading设置为false
+
+26.防抖和节流，此处使用节流
+throttle 应用场景：鼠标多次点击按钮进行操作，输入框频繁搜索内容等条件下，为节省资源使用节流。(单位时间内只触发一次)
+
+debounce应用场景：滚动加载请求数据，window触发resize的时候，使用防抖函数可以让其只在最后触发一次。
+
+节流（throttle）和防抖（debounce）的区别：函数防抖和函数节流都是防止某一时间频繁触发，防抖和节流原理却不一样。函数防抖是某一段时间内只执行一次，而函数节流是间隔时间执行。节流是在频繁操作的情况下按照给定的时间定时执行，防抖在频繁操作过程中会清楚上次的执行时间重新进行计算，从而只执行一次，类似于人进入电梯时电梯关门时间的处理。
+
+vue文档中有提到debounce，但该在2.0已被属性被移除及处理，推荐lodash
+
+原文链接：https://blog.csdn.net/gll19910602/article/details/103427360
+
+节流：每当用户触发了一次 scroll 事件，就为这个触发操作开启计时器。一段时间内，后续所有的 scroll 事件都无法触发新的 scroll 回调。直到“一段时间”到了，第一次触发的 scroll 事件对应的回调才会执行，而“一段时间内”触发的后续的 scroll 回调都会被节流阀无视掉。
+
+详细讲解：
+https://www.jb51.net/article/199265.htm
+
+  mounted(){
+    // 节流函数
+    this.scrollHandler = _.throttle(this.watchScroll.bind(this), 300)
+    window.addEventListener('scroll',this.scrollHandler);
+  },
+  destroyed(){
+    window.removeEventListener('scroll',this.scrollHandler);
+  },
+  methods:{
+    watchScroll(e){
+      if(this.loading) return;
+      
+      let heightToBrowserTop = this.$refs['waterfall'].getBoundingClientRect().bottom;
+      let browserHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+      if(heightToBrowserTop < browserHeight){
+        this.loading = true;
+        this.$emit('loadContinue');
+      }
+    }
+  }
+  
+ 27. 使用 label=" "设置*
+ <!-- label=" "用空格占位，才能显示required:true的*号 -->
+            <el-form-item prop="specs" label=" ">
+              <el-input placeholder="请输入内容" v-model="item.specs" @blur="getInputValue(index,$event,'specs')"></el-input>
+            </el-form-item>
+设置完后，*和input框会变不同行，进行以下设置即可（两个注释的地方）		
+ .raw-item
+  // required:true的*号 和input框显示在一行，且input框会变宽，去掉float left
+  // float left
+  margin-right 65px
+  margin-bottom 20px
+  .el-input 
+    margin-right 2px
+    // required:true的*号 和input框显示在一行，将width: 100%;改为width: 86%;
+    width: 86%;
+
+    28.路由文件按需加载，将多个文件打包到一个文件
+const Login = () =>
+    import ( /* webpackChunkName: "login" */ '@/views/user-login/index.vue');
+const Register = () =>
+    import ( /* webpackChunkName: "register" */ '@/views/user-login/index.vue');
+
+29.封装http发送axios请求接口
+
+30.如果数据在页面不用，可以不用声明在data中，直接在使用时，this.total即可
+
+31.登录鉴权：路由父级与子级鉴权配置，路由router.beforeEach钩子函数进行鉴权
+二级路由和一级路由登录鉴权：需要使用to.matched.some(item => item.meta.login === true) 判断二级路由和一级路由都需要登录

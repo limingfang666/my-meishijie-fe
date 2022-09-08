@@ -70,7 +70,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="14">
-              <el-form-item label prop="product_story">
+              <el-form-item class="product-story" label=" " prop="product_story">
                 <el-input
                   class="introduce-text"
                   type="textarea"
@@ -462,6 +462,10 @@ export default {
   .el-textarea {
     width: 60%;
     margin-left: 6px;
+  }
+
+  .product-story .el-form-item__content {
+    width: 120%;
   }
 }
 </style>

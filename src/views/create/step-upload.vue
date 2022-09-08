@@ -16,11 +16,11 @@
         </div>
         </el-form-item>
         <!--如果加了 el-form-item ，其子类会集成其width默认50px-->
-      <el-form-item prop="describe">
+      <el-form-item prop="describe" label=" ">
         <el-input
           class="introduce-text"
           type="textarea"
-          :rows="8"
+          :rows="9"
           placeholder="请输入内容"
           v-model="item.describe"
           @blur="getInputValue(index,$event)"
@@ -137,12 +137,15 @@ export default {
   .upload-box
     img 
       vertical-align top
+  // 增加*号后，重新调整样式
   .el-form-item :last-child
-    width: 140%
+    width: 160%
   div.introduce-text.el-textarea
-    width: 100%
-    margin-left 50px
+    width: 88%
+    // margin-left 6px
   i.delete-icon.el-icon-close
     margin: 80px 0 0 330px
+  .el-form-item__label
+    margin-left 12px
 </style>
 

@@ -1,6 +1,7 @@
 <template>
   <div class="fans">
 		<div class="info-empty">
+			{{info}}
 			<div>
 				<p v-if="info.length==0&&isFans">还没有被关注哦！多发布菜谱，更容易被找到。</p>
 				<p v-if="info.length==0&&!isFans">还没有关注别人哦！可以预览菜谱，找到别人</p>
@@ -40,11 +41,12 @@ export default {
     immediate:true
   },
   created(){
-    this.changeTab();
+	this.changeTab();
   },
   methods:{
     changeTab(){
       let currTab = this.$route.name;
+	  console.log(currTab);
 	  
       if(currTab === "fans"){
         this.isFans = true;

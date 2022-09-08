@@ -3,14 +3,15 @@
   <div class="stuff">
     <div class="clearfix">
       <div class="raw-item" v-for="(item,index) in value" :key="index+1">
-        <el-row :gutter="20">
+        <el-row :gutter="28">
           <el-col :span="10">
-            <el-form-item prop="name">
+            <el-form-item prop="name" label=" ">
               <el-input placeholder="请输入内容" v-model="item.name" @blur="getInputValue(index,$event,'name')"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="10">
-            <el-form-item prop="specs">
+            <!-- label=" "用空格占位，才能显示required:true的*号 -->
+            <el-form-item prop="specs" label=" ">
               <el-input placeholder="请输入内容" v-model="item.specs" @blur="getInputValue(index,$event,'specs')"></el-input>
             </el-form-item>
           </el-col>
@@ -127,10 +128,13 @@ export default {
     background: #ff3232;
     color: #fff;
 .raw-item
-  float left
+  // required:true的*号 和input框显示在一行，且input框会变宽
+  // float left
   margin-right 65px
   margin-bottom 20px
   .el-input 
-    margin-right 5px
+    margin-right 2px
+    // required:true的*号 和input框显示在一行
+    width: 86%;
 </style>
 

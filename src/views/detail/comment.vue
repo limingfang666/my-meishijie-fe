@@ -44,7 +44,7 @@
           <div class="comment-detail">
             <p class="p1">{{comment.commentText}}</p>
             <div class="info clearfix">
-              <span style="float: left;">{{comment.updateAt}}</span>
+              <span style="float: left;">{{comment.updateAt | dateTime}}</span>
             </div>
           </div>
         </li>
