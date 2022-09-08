@@ -140,4 +140,14 @@ router.beforeEach(async(to, from, next) => {
 
 });
 
+// 解决浏览器懒加载文件缓存出现问题后报错
+router.onError((error) => {
+    const pattern = /Loading chunk (\d)+ failed/g;
+    const isChunkLoadFailed = error.message.match(pattern);
+    const targetPath = router.history.pending.fullPath;
+    if (isChunkLoadFailed) {
+        router.replace(targetPath);
+    }
+});
+
 export default router;
